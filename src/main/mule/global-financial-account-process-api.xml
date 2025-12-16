@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+  xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+  xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+  xmlns:http="http://www.mulesoft.org/schema/mule/http"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+  http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+">
+
+  <!-- GET /accounts - Business Logic Flow -->
+  <flow name="get-accounts-business-logic" doc:name="get-accounts-business-logic">
+    <try doc:name="Try">
+      <http:request method="GET" config-ref="Global_Financial_Account_System_API_Config" path="/api/global/accounts" doc:name="Get Accounts from System API">
+        <http:query-params><![CDATA[#[{
+          "globalId": payload.globalId default null,
+          "limit": payload.limit default "100",
+          "offset": payload.offset default "0"
+        }]]]></http:query-params>
+      </http:request>
+
+      <http:response statusCode="200" doc:name="HTTP Response"/>
+      
+      <error-handler>
+        <on-error-propagate type="HTTP:REQUEST" enableNotifications="true" logException="true" doc:name="HTTP Error">
+          <ee:transform doc:name="Transform Error">
+            <ee:message>
+              <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error: {
+    code: "SERVICE_ERROR",
+    message: "An error occurred while fetching accounts",
+    timestamp: now()
+  }
+}]]></ee:set-payload>
+            </ee:message>
+          </ee:transform>
+          <http:response statusCode="500" doc:name="HTTP Response"/>
+        </on-error-propagate>
+      </error-handler>
+    </try>
+  </flow>
+
+  <!-- POST /accounts - Business Logic Flow -->
+  <flow name="upsert-account-business-logic" doc:name="upsert-account-business-logic">
+    <try doc:name="Try">
+      <http:request method="POST" config-ref="Global_Financial_Account_System_API_Config" path="/api/global/accounts" doc:name="Upsert Account to System API">
+        <http:body><![CDATA[#[payload]]]></http:body>
+      </http:request>
+
+      <http:response statusCode="#[attributes.statusCode default 200]" doc:name="HTTP Response"/>
+      
+      <error-handler>
+        <on-error-propagate type="HTTP:REQUEST" enableNotifications="true" logException="true" doc:name="HTTP Error">
+          <ee:transform doc:name="Transform Error">
+            <ee:message>
+              <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error: {
+    code: "SERVICE_ERROR",
+    message: "An error occurred while upserting account",
+    timestamp: now()
+  }
+}]]></ee:set-payload>
+            </ee:message>
+          </ee:transform>
+          <http:response statusCode="500" doc:name="HTTP Response"/>
+        </on-error-propagate>
+      </error-handler>
+    </try>
+  </flow>
+
+  <!-- GET /accounts/{accountGlobalId} - Business Logic Flow -->
+  <flow name="get-account-by-global-id-business-logic" doc:name="get-account-by-global-id-business-logic">
+    <try doc:name="Try">
+      <http:request method="GET" config-ref="Global_Financial_Account_System_API_Config" path="/api/global/accounts/{accountGlobalId}" doc:name="Get Account from System API">
+        <http:uri-params><![CDATA[#[{accountGlobalId: vars.accountGlobalId}]]]></http:uri-params>
+      </http:request>
+
+      <http:response statusCode="200" doc:name="HTTP Response"/>
+      
+      <error-handler>
+        <on-error-propagate type="HTTP:NOT_FOUND" enableNotifications="true" logException="true" doc:name="Not Found Error">
+          <ee:transform doc:name="Transform Error">
+            <ee:message>
+              <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error: {
+    code: "NOT_FOUND",
+    message: "Account not found",
+    timestamp: now()
+  }
+}]]></ee:set-payload>
+            </ee:message>
+          </ee:transform>
+          <http:response statusCode="404" doc:name="HTTP Response"/>
+        </on-error-propagate>
+      </error-handler>
+    </try>
+  </flow>
+
+  <!-- GET /transactions - Get Transactions (pass-through) -->
+  <flow name="get-transactions-flow" doc:name="get-transactions-flow">
+    <http:listener doc:name="GET /transactions" config-ref="HTTP_Listener_config" path="/api/global/accounts/transactions" allowedMethods="GET"/>
+    
+    <try doc:name="Try">
+      <http:request method="GET" config-ref="Global_Financial_Account_System_API_Config" path="/api/global/accounts/transactions" doc:name="Get Transactions from System API">
+        <http:query-params><![CDATA[#[attributes.queryParams default {}]]]></http:query-params>
+      </http:request>
+
+      <http:response statusCode="200" doc:name="HTTP Response"/>
+      
+      <error-handler>
+        <on-error-propagate type="HTTP:REQUEST" enableNotifications="true" logException="true" doc:name="HTTP Error">
+          <ee:transform doc:name="Transform Error">
+            <ee:message>
+              <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error: {
+    code: "SERVICE_ERROR",
+    message: "An error occurred while fetching transactions",
+    timestamp: now()
+  }
+}]]></ee:set-payload>
+            </ee:message>
+          </ee:transform>
+          <http:response statusCode="500" doc:name="HTTP Response"/>
+        </on-error-propagate>
+      </error-handler>
+    </try>
+  </flow>
+
+  <!-- POST /transactions - Upsert Transaction (pass-through) -->
+  <flow name="upsert-transaction-flow" doc:name="upsert-transaction-flow">
+    <http:listener doc:name="POST /transactions" config-ref="HTTP_Listener_config" path="/api/global/accounts/transactions" allowedMethods="POST"/>
+    
+    <try doc:name="Try">
+      <http:request method="POST" config-ref="Global_Financial_Account_System_API_Config" path="/api/global/accounts/transactions" doc:name="Upsert Transaction to System API">
+        <http:body><![CDATA[#[payload]]]></http:body>
+      </http:request>
+
+      <http:response statusCode="#[attributes.statusCode default 200]" doc:name="HTTP Response"/>
+      
+      <error-handler>
+        <on-error-propagate type="HTTP:REQUEST" enableNotifications="true" logException="true" doc:name="HTTP Error">
+          <ee:transform doc:name="Transform Error">
+            <ee:message>
+              <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error: {
+    code: "SERVICE_ERROR",
+    message: "An error occurred while upserting transaction",
+    timestamp: now()
+  }
+}]]></ee:set-payload>
+            </ee:message>
+          </ee:transform>
+          <http:response statusCode="500" doc:name="HTTP Response"/>
+        </on-error-propagate>
+      </error-handler>
+    </try>
+  </flow>
+
+  <!-- GET /cards - Get Cards (pass-through) -->
+  <flow name="get-cards-flow" doc:name="get-cards-flow">
+    <http:listener doc:name="GET /cards" config-ref="HTTP_Listener_config" path="/api/global/accounts/cards" allowedMethods="GET"/>
+    
+    <try doc:name="Try">
+      <http:request method="GET" config-ref="Global_Financial_Account_System_API_Config" path="/api/global/accounts/cards" doc:name="Get Cards from System API">
+        <http:query-params><![CDATA[#[attributes.queryParams default {}]]]></http:query-params>
+      </http:request>
+
+      <http:response statusCode="200" doc:name="HTTP Response"/>
+      
+      <error-handler>
+        <on-error-propagate type="HTTP:REQUEST" enableNotifications="true" logException="true" doc:name="HTTP Error">
+          <ee:transform doc:name="Transform Error">
+            <ee:message>
+              <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error: {
+    code: "SERVICE_ERROR",
+    message: "An error occurred while fetching cards",
+    timestamp: now()
+  }
+}]]></ee:set-payload>
+            </ee:message>
+          </ee:transform>
+          <http:response statusCode="500" doc:name="HTTP Response"/>
+        </on-error-propagate>
+      </error-handler>
+    </try>
+  </flow>
+
+  <!-- POST /cards - Upsert Card (pass-through) -->
+  <flow name="upsert-card-flow" doc:name="upsert-card-flow">
+    <http:listener doc:name="POST /cards" config-ref="HTTP_Listener_config" path="/api/global/accounts/cards" allowedMethods="POST"/>
+    
+    <try doc:name="Try">
+      <http:request method="POST" config-ref="Global_Financial_Account_System_API_Config" path="/api/global/accounts/cards" doc:name="Upsert Card to System API">
+        <http:body><![CDATA[#[payload]]]></http:body>
+      </http:request>
+
+      <http:response statusCode="#[attributes.statusCode default 200]" doc:name="HTTP Response"/>
+      
+      <error-handler>
+        <on-error-propagate type="HTTP:REQUEST" enableNotifications="true" logException="true" doc:name="HTTP Error">
+          <ee:transform doc:name="Transform Error">
+            <ee:message>
+              <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error: {
+    code: "SERVICE_ERROR",
+    message: "An error occurred while upserting card",
+    timestamp: now()
+  }
+}]]></ee:set-payload>
+            </ee:message>
+          </ee:transform>
+          <http:response statusCode="500" doc:name="HTTP Response"/>
+        </on-error-propagate>
+      </error-handler>
+    </try>
+  </flow>
+
+</mule>

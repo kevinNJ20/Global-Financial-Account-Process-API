@@ -1,0 +1,7 @@
+{
+  "name": "global-financial-account-process-api",
+  "minMuleVersion": "4.10.0",
+  "javaSpecificationVersions": [
+    "17"
+  ]
+}
