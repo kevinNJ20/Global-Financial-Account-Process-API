@@ -8,19 +8,16 @@
       xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
       http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
       http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
-      http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+      http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd">
 
   <!-- APIkit Router Configuration -->
-  <apikit:config name="global-financial-account-process-api-config" 
-                  raml="global-financial-account-process-api.raml" 
-                  outboundHeadersMapName="outboundHeaders" 
-                  httpStatusVarName="httpStatus"/>
 
   <!-- Main HTTP Listener with APIkit Router -->
   <flow name="main">
     <http:listener config-ref="HTTP_Listener_config" path="/api/*" doc:name="HTTP Listener"/>
-    <apikit:router config-ref="global-financial-account-process-api-config" doc:name="APIkit Router"/>
-    <error-handler>
+		<apikit:router doc:name="APIkit Router" doc:id="e0f74852-b3a0-425e-b8e9-8ae6d18575b4" config-ref="global-financial-account-process-api-config"/>
+		<error-handler>
       <on-error-propagate type="APIKIT:NOT_FOUND" enableNotifications="true" logException="true" doc:name="On Error Propagate">
         <ee:transform doc:name="Transform Error Response">
           <ee:message>
@@ -132,7 +129,7 @@ output application/json
   </flow>
 
   <!-- GET /accounts/{accountGlobalId} -->
-  <flow name="get:\accounts\{accountGlobalId}:global-financial-account-process-api-config">
+  <flow name="get:\accounts\(accountGlobalId):global-financial-account-process-api-config">
     <set-variable value="#[attributes.uriParams.accountGlobalId]" variableName="accountGlobalId" doc:name="Set Account Global ID"/>
     <flow-ref name="get-account-by-global-id-business-logic" doc:name="get-account-by-global-id-business-logic"/>
   </flow>
@@ -154,7 +151,7 @@ output application/json
 
   <!-- POST /accounts/transactions -->
   <flow name="post:\accounts\transactions:global-financial-account-process-api-config">
-    <flow-ref name="upsert-transaction-business-logic" doc:name="upsert-transaction-business-logic"/>
+    <flow-ref name="upsert-transaction-business-logic" doc:name="upsert-transaction-business-logic" doc:id="90b482c6-6ed6-46d8-9788-ac3e383db9f3"/>
   </flow>
 
   <!-- GET /accounts/cards -->
@@ -169,12 +166,12 @@ output application/json
 }]]></ee:set-payload>
       </ee:message>
     </ee:transform>
-    <flow-ref name="get-cards-business-logic" doc:name="get-cards-business-logic"/>
+    <flow-ref name="get-cards-business-logic" doc:name="get-cards-business-logic" doc:id="cf2534ef-88fe-4a96-b5c6-3c39cd4d74fe"/>
   </flow>
 
   <!-- POST /accounts/cards -->
   <flow name="post:\accounts\cards:global-financial-account-process-api-config">
-    <flow-ref name="upsert-card-business-logic" doc:name="upsert-card-business-logic"/>
+    <flow-ref name="upsert-card-business-logic" doc:name="upsert-card-business-logic" doc:id="93545f24-fd83-4c27-9f6a-c6358c0b6755"/>
   </flow>
 
 </mule>

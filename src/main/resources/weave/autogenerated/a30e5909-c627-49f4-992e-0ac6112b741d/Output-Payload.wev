@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_a30e5909_c627_49f4_992e_0ac6112b741d_Output_Payload = Array<{  globalId?: String,   cardType: String,   id?: String,   cardNumber: String,   _?: Any}>
+

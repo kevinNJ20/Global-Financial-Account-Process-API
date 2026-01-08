@@ -1,0 +1,10 @@
+%dw 2.0
+
+type auto_c49c8b1a_02ba_4866_9ec5_dd049175f12d_Input_Payload = {
+  globalId?: String, 
+  cardType: String, 
+  id?: String, 
+  cardNumber: String, 
+  _?: Any
+}
+

@@ -105,13 +105,13 @@ output application/json
     </try>
   </flow>
 
-  <!-- GET /transactions - Get Transactions (pass-through) -->
-  <flow name="get-transactions-flow" doc:name="get-transactions-flow">
-    <http:listener doc:name="GET /transactions" config-ref="HTTP_Listener_config" path="/api/global/accounts/transactions" allowedMethods="GET"/>
-    
+  <!-- GET /transactions - Business Logic Flow -->
+  <flow name="get-transactions-business-logic" doc:name="get-transactions-business-logic">
     <try doc:name="Try">
       <http:request method="GET" config-ref="Global_Financial_Account_System_API_Config" path="/api/global/accounts/transactions" doc:name="Get Transactions from System API">
-        <http:query-params><![CDATA[#[attributes.queryParams default {}]]]></http:query-params>
+        <http:query-params><![CDATA[#[{
+          "accountGlobalId": payload.accountGlobalId default null
+        }]]]></http:query-params>
       </http:request>
 
       <set-variable value="200" doc:name="httpStatus" doc:id="d3d4a356-1b30-4ea3-bf48-82e66c597694" variableName="httpStatus"/>
@@ -138,10 +138,8 @@ output application/json
     </try>
   </flow>
 
-  <!-- POST /transactions - Upsert Transaction (pass-through) -->
-  <flow name="upsert-transaction-flow" doc:name="upsert-transaction-flow">
-    <http:listener doc:name="POST /transactions" config-ref="HTTP_Listener_config" path="/api/global/accounts/transactions" allowedMethods="POST"/>
-    
+  <!-- POST /transactions - Business Logic Flow -->
+  <flow name="upsert-transaction-business-logic" doc:name="upsert-transaction-business-logic">
     <try doc:name="Try">
       <http:request method="POST" config-ref="Global_Financial_Account_System_API_Config" path="/api/global/accounts/transactions" doc:name="Upsert Transaction to System API">
         <http:body><![CDATA[#[payload]]]></http:body>
@@ -171,13 +169,13 @@ output application/json
     </try>
   </flow>
 
-  <!-- GET /cards - Get Cards (pass-through) -->
-  <flow name="get-cards-flow" doc:name="get-cards-flow">
-    <http:listener doc:name="GET /cards" config-ref="HTTP_Listener_config" path="/api/global/accounts/cards" allowedMethods="GET"/>
-    
+  <!-- GET /cards - Business Logic Flow -->
+  <flow name="get-cards-business-logic" doc:name="get-cards-business-logic">
     <try doc:name="Try">
       <http:request method="GET" config-ref="Global_Financial_Account_System_API_Config" path="/api/global/accounts/cards" doc:name="Get Cards from System API">
-        <http:query-params><![CDATA[#[attributes.queryParams default {}]]]></http:query-params>
+        <http:query-params><![CDATA[#[{
+          "customerGlobalId": payload.customerGlobalId default null
+        }]]]></http:query-params>
       </http:request>
 
       <set-variable value="200" doc:name="httpStatus" doc:id="d3d4a356-1b30-4ea3-bf48-82e66c597694" variableName="httpStatus"/>
@@ -204,10 +202,8 @@ output application/json
     </try>
   </flow>
 
-  <!-- POST /cards - Upsert Card (pass-through) -->
-  <flow name="upsert-card-flow" doc:name="upsert-card-flow">
-    <http:listener doc:name="POST /cards" config-ref="HTTP_Listener_config" path="/api/global/accounts/cards" allowedMethods="POST"/>
-    
+  <!-- POST /cards - Business Logic Flow -->
+  <flow name="upsert-card-business-logic" doc:name="upsert-card-business-logic">
     <try doc:name="Try">
       <http:request method="POST" config-ref="Global_Financial_Account_System_API_Config" path="/api/global/accounts/cards" doc:name="Upsert Card to System API">
         <http:body><![CDATA[#[payload]]]></http:body>
