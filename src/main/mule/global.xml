@@ -21,7 +21,7 @@ http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/m
   <http:request-config name="Global_Financial_Account_System_API_Config" doc:name="Global Financial Account System API Config">
     <http:request-connection host="${global.financial.account.system.api.host}" port="${global.financial.account.system.api.port}" />
   </http:request-config>
-	<apikit:config outboundHeadersMapName="outboundHeadersMapName" httpStatusVarName="httpStatus" doc:name="Router" doc:id="d475c204-e3f1-4c0c-b66b-59e95d6247ed" name="global-financial-account-process-api-config" api="global-financial-account-process-api.raml" />
+	<apikit:config outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" doc:name="Router" doc:id="d475c204-e3f1-4c0c-b66b-59e95d6247ed" name="global-financial-account-process-api-config" api="global-financial-account-process-api.raml" />
 
 
 </mule>
