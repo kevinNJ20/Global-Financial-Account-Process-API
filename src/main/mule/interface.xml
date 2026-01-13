@@ -133,7 +133,7 @@ output application/json
   </flow>
 
   <!-- POST /accounts -->
-  <flow name="post:\accounts:global-financial-account-process-api-config">
+  <flow name="post:\accounts:application\json:global-financial-account-process-api-config">
     <flow-ref name="upsert-account-business-logic" doc:name="upsert-account-business-logic"/>
   </flow>
 
@@ -159,7 +159,7 @@ output application/json
   </flow>
 
   <!-- POST /accounts/transactions -->
-  <flow name="post:\accounts\transactions:global-financial-account-process-api-config">
+  <flow name="post:\accounts\transactions:application\json:global-financial-account-process-api-config">
     <flow-ref name="upsert-transaction-business-logic" doc:name="upsert-transaction-business-logic" doc:id="90b482c6-6ed6-46d8-9788-ac3e383db9f3"/>
   </flow>
 
@@ -179,7 +179,7 @@ output application/json
   </flow>
 
   <!-- POST /accounts/cards -->
-  <flow name="post:\accounts\cards:global-financial-account-process-api-config">
+  <flow name="post:\accounts\cards:application\json:global-financial-account-process-api-config">
     <flow-ref name="upsert-card-business-logic" doc:name="upsert-card-business-logic" doc:id="93545f24-fd83-4c27-9f6a-c6358c0b6755"/>
   </flow>
 
