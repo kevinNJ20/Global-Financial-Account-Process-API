@@ -11,13 +11,23 @@
 
   <!-- GET /accounts - Business Logic Flow -->
   <flow name="get-accounts-business-logic" doc:name="get-accounts-business-logic">
+    <ee:transform doc:name="Build Query Parameters">
+      <ee:message>
+        <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+  limit: (payload.limit default "100") as String,
+  offset: (payload.offset default "0") as String
+} ++ (if (payload.globalId != null and payload.globalId != "") {"globalId": payload.globalId as String} else {})
+++ (if (payload.customerGlobalId != null and payload.customerGlobalId != "") {"customerGlobalId": payload.customerGlobalId as String} else {})
+++ (if (payload.accountNumber != null and payload.accountNumber != "") {"accountNumber": payload.accountNumber as String} else {})
+++ (if (payload.accountType != null and payload.accountType != "") {"accountType": payload.accountType as String} else {})]]></ee:set-payload>
+      </ee:message>
+    </ee:transform>
     <try doc:name="Try">
       <http:request config-ref="Global_Financial_Account_System_API_Config" path="/api/accounts" doc:name="Get Accounts from System API">
-        <http:query-params><![CDATA[#[{
-          "globalId": payload.globalId default null,
-          "limit": payload.limit default "100",
-          "offset": payload.offset default "0"
-        }]]]></http:query-params>
+        <http:query-params><![CDATA[#[payload]]]></http:query-params>
       </http:request>
 
       <set-variable value="200" doc:name="httpStatus" doc:id="d3d4a356-1b30-4ea3-bf48-82e66c597694" variableName="httpStatus"/>
@@ -125,11 +135,25 @@ output application/json
 
   <!-- GET /transactions - Business Logic Flow -->
   <flow name="get-transactions-business-logic" doc:name="get-transactions-business-logic">
+    <ee:transform doc:name="Build Query Parameters">
+      <ee:message>
+        <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+(if (payload.accountGlobalId != null and payload.accountGlobalId != "") {"accountGlobalId": payload.accountGlobalId as String} else {})
+++ (if (payload.startDate != null and payload.startDate != "") {"startDate": payload.startDate as String} else {})
+++ (if (payload.endDate != null and payload.endDate != "") {"endDate": payload.endDate as String} else {})
+++ (if (payload.transactionType != null and payload.transactionType != "") {"transactionType": payload.transactionType as String} else {})
+++ (if (payload.status != null and payload.status != "") {"status": payload.status as String} else {})
+++ {
+  limit: (payload.limit default "100") as String,
+  offset: (payload.offset default "0") as String
+}]]></ee:set-payload>
+      </ee:message>
+    </ee:transform>
     <try doc:name="Try">
       <http:request config-ref="Global_Financial_Account_System_API_Config" path="/api/accounts/transactions" doc:name="Get Transactions from System API">
-        <http:query-params><![CDATA[#[{
-          "accountGlobalId": payload.accountGlobalId default null
-        }]]]></http:query-params>
+        <http:query-params><![CDATA[#[payload]]]></http:query-params>
       </http:request>
 
       <set-variable value="200" doc:name="httpStatus" doc:id="d3d4a356-1b30-4ea3-bf48-82e66c597694" variableName="httpStatus"/>
@@ -158,6 +182,42 @@ output application/json
 
   <!-- POST /transactions - Business Logic Flow -->
   <flow name="upsert-transaction-business-logic" doc:name="upsert-transaction-business-logic">
+    <ee:transform doc:name="Transform to System API Format">
+      <ee:message>
+        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+fun formatValueDate(vd) =
+  if (vd == null) null
+  else if (vd is String)
+    if (vd matches /^\d{4}-\d{2}-\d{2}$/)
+      vd ++ "T00:00:00Z"
+    else if (vd matches /^\d{4}-\d{2}-\d{2}T/)
+      vd
+    else null
+  else (vd as DateTime) as String {format: "yyyy-MM-dd'T'HH:mm:ssX"}
+---
+{
+  (globalId: payload.globalId) if payload.globalId != null,
+  transactionNumber: payload.transactionNumber,
+  accountGlobalId: payload.accountGlobalId,
+  transactionType: payload.transactionType,
+  amount: payload.amount,
+  currency: payload.currency default "USD",
+  transactionDate: payload.transactionDate,
+  (valueDate: formatValueDate(payload.valueDate)) if payload.valueDate != null,
+  (description: payload.description) if payload.description != null,
+  (merchantName: payload.merchantName) if payload.merchantName != null,
+  (category: payload.category) if payload.category != null,
+  (checkNumber: payload.checkNumber) if payload.checkNumber != null,
+  (referenceNumber: payload.referenceNumber) if payload.referenceNumber != null,
+  (relatedAccountGlobalId: payload.relatedAccountGlobalId) if payload.relatedAccountGlobalId != null,
+  status: payload.status default "Posted",
+  (disputeStatus: payload.disputeStatus) if payload.disputeStatus != null,
+  (disputeReason: payload.disputeReason) if payload.disputeReason != null
+}]]></ee:set-payload>
+      </ee:message>
+    </ee:transform>
+    <logger level="INFO" message="Sending transaction to System API: #[payload]" doc:name="Log Transaction Payload"/>
     <try doc:name="Try">
       <http:request method="POST" config-ref="Global_Financial_Account_System_API_Config" path="/api/accounts/transactions" doc:name="Upsert Transaction to System API">
       </http:request>
@@ -165,6 +225,23 @@ output application/json
       <set-variable value="#[attributes.statusCode default 200]" doc:name="httpStatus" doc:id="d3d4a356-1b30-4ea3-bf48-82e66c597694" variableName="httpStatus"/>
       
       <error-handler>
+        <on-error-propagate type="HTTP:INTERNAL_SERVER_ERROR" enableNotifications="true" logException="true" doc:name="HTTP Internal Server Error">
+          <ee:transform doc:name="Transform Error">
+            <ee:message>
+              <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error: {
+    code: "DUPLICATE_TRANSACTION",
+    message: "A transaction with the same transaction number already exists",
+    timestamp: now()
+  }
+}]]></ee:set-payload>
+            </ee:message>
+          </ee:transform>
+          <set-variable value="409" doc:name="httpStatus" doc:id="d3d4a356-1b30-4ea3-bf48-82e66c597694" variableName="httpStatus"/>
+        </on-error-propagate>
         <on-error-propagate type="HTTP:CONNECTIVITY" enableNotifications="true" logException="true" doc:name="HTTP Error">
           <ee:transform doc:name="Transform Error">
             <ee:message>
@@ -188,11 +265,17 @@ output application/json
 
   <!-- GET /cards - Business Logic Flow -->
   <flow name="get-cards-business-logic" doc:name="get-cards-business-logic">
+    <ee:transform doc:name="Build Query Parameters">
+      <ee:message>
+        <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+(if (payload.customerGlobalId != null and payload.customerGlobalId != "") {"customerGlobalId": payload.customerGlobalId as String} else {})]]></ee:set-payload>
+      </ee:message>
+    </ee:transform>
     <try doc:name="Try">
       <http:request config-ref="Global_Financial_Account_System_API_Config" path="/api/accounts/cards" doc:name="Get Cards from System API">
-        <http:query-params><![CDATA[#[{
-          "customerGlobalId": payload.customerGlobalId default null
-        }]]]></http:query-params>
+        <http:query-params><![CDATA[#[payload]]]></http:query-params>
       </http:request>
 
       <set-variable value="200" doc:name="httpStatus" doc:id="d3d4a356-1b30-4ea3-bf48-82e66c597694" variableName="httpStatus"/>
